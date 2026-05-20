@@ -1,0 +1,125 @@
+<%
+  pageTitle = 'Kelola Taman';
+  activePage = 'taman';
+%>
+<%- include('_header') %>
+
+<% const successMsg = { tambah:'✅ Taman berhasil ditambahkan!', edit:'✅ Taman berhasil diperbarui!', hapus:'✅ Taman berhasil dihapus.' }; %>
+<% if (query && query.success && successMsg[query.success]) { %>
+<div class="alert alert-success"><%= successMsg[query.success] %></div>
+<% } %>
+<% if (query && query.error) { %>
+<div class="alert alert-error">⚠️ Terjadi kesalahan. Silakan coba lagi.</div>
+<% } %>
+
+<div class="card" style="margin-bottom:20px; padding:20px 24px;">
+  <form method="GET" action="/admin/taman" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+    <input type="text" name="q" value="<%= filters.q || '' %>" placeholder="🔍 Cari nama taman..." style="flex:1;min-width:180px;padding:8px 14px;border:2px solid #e5e7eb;border-radius:8px;font-family:inherit;font-size:14px;outline:none;">
+    <select name="status" style="padding:8px 14px;border:2px solid #e5e7eb;border-radius:8px;font-family:inherit;font-size:14px;outline:none;min-width:140px;">
+      <option value="">Semua Status</option>
+      <option value="aktif"     <%= filters.status==='aktif'     ?'selected':'' %>>Aktif</option>
+      <option value="nonaktif"  <%= filters.status==='nonaktif'  ?'selected':'' %>>Non-aktif</option>
+    </select>
+    <select name="kecamatan" style="padding:8px 14px;border:2px solid #e5e7eb;border-radius:8px;font-family:inherit;font-size:14px;outline:none;min-width:160px;">
+      <option value="">Semua Kecamatan</option>
+      <% kecamatanList.forEach(k => { %>
+      <option value="<%= k.nama %>" <%= filters.kecamatan===k.nama?'selected':'' %>><%= k.nama %></option>
+      <% }) %>
+    </select>
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a href="/admin/taman" class="btn btn-secondary">Reset</a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>🌳 Daftar Taman (<%= taman.length %> taman)</h2>
+    <a href="/admin/taman/tambah" class="btn btn-primary">+ Tambah Taman</a>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nama Taman</th>
+          <th>Kecamatan</th>
+          <th>Kategori</th>
+          <th>Tiket</th>
+          <th>Ulasan</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% taman.forEach((t, i) => { %>
+        <tr>
+          <td style="color:#999;"><%= i+1 %></td>
+          <td>
+            <strong><%= t.nama_taman %></strong>
+            <% if (t.photo_url) { %>
+            <div style="font-size:11px;color:#888;margin-top:2px;">📷 Ada foto</div>
+            <% } %>
+          </td>
+          <td><%= t.kecamatan || '—' %></td>
+          <td><%= t.kategori || '—' %></td>
+          <td>
+            <% if (t.tiket_masuk == 0) { %>
+            <span style="color:#15803d;font-weight:600;">Gratis</span>
+            <% } else { %>
+            <span>Rp <%= parseInt(t.tiket_masuk).toLocaleString('id-ID') %></span>
+            <% } %>
+          </td>
+          <td><%= t.jumlah_ulasan %> ulasan</td>
+          <td>
+            <button
+              onclick="toggleStatus(<%= t.id %>, this)"
+              class="badge-<%= t.status %>"
+              style="cursor:pointer;border:none;background:none;font-family:inherit;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;"
+              title="Klik untuk toggle status"
+            ><%= t.status %></button>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <a href="/admin/taman/<%= t.id %>/edit" class="btn btn-warning btn-sm">✏️ Edit</a>
+              <a href="/taman/<%= t.id %>" target="_blank" class="btn btn-secondary btn-sm">👁️</a>
+              <button onclick="hapusTaman(<%= t.id %>, '<%= t.nama_taman.replace(/'/g, "\\'") %>')" class="btn btn-danger btn-sm">🗑️</button>
+            </div>
+          </td>
+        </tr>
+        <% }) %>
+        <% if (!taman.length) { %>
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:#999;">Tidak ada taman ditemukan.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Form hapus tersembunyi -->
+<form id="hapusForm" method="POST" style="display:none;">
+  <input type="hidden" name="_method" value="DELETE">
+</form>
+
+<script>
+async function toggleStatus(id, btn) {
+  try {
+    const res = await fetch(`/admin/taman/${id}/status`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      const isAktif = btn.classList.contains('badge-aktif');
+      btn.classList.remove('badge-aktif', 'badge-nonaktif');
+      btn.classList.add(isAktif ? 'badge-nonaktif' : 'badge-aktif');
+      btn.textContent = isAktif ? 'nonaktif' : 'aktif';
+    }
+  } catch(e) { alert('Gagal mengubah status.'); }
+}
+
+function hapusTaman(id, nama) {
+  if (!confirm(`Yakin ingin menghapus taman "${nama}"?\n\nData yang sudah dihapus tidak bisa dikembalikan!`)) return;
+  const form = document.getElementById('hapusForm');
+  form.action = `/admin/taman/${id}/hapus`;
+  form.submit();
+}
+</script>
+
+<%- include('_footer') %>

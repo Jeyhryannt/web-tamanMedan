@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title><%= taman.nama_taman %> — TamanMedan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/detail.css">
+</head>
+<body>
+<%- include('partials/navbar') %>
+
+<!-- Hero -->
+<div class="detail-hero">
+  <img src="<%= taman.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=1400' %>"
+       onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=1400'" alt="<%= taman.nama_taman %>">
+  <div class="dh-overlay"></div>
+  <div class="dh-content">
+    <a href="/taman" class="back-btn">← Kembali ke Daftar</a>
+    <div class="dh-tags">
+      <span class="tag-kat"><%= taman.kategori %></span>
+      <span class="tag-status <%= taman.status %>"><%= taman.status %></span>
+    </div>
+    <h1><%= taman.nama_taman %></h1>
+    <div class="dh-meta">
+      <span>📍 <%= taman.alamat %></span>
+      <span>⭐ <%= taman.rating_avg %> (<%= taman.jumlah_ulasan %> ulasan)</span>
+    </div>
+  </div>
+</div>
+
+<div class="detail-wrap">
+  <div class="detail-main">
+    <!-- Info cards -->
+    <div class="info-row">
+      <div class="icard"><span class="icard-icon">🕐</span><span class="icard-label">Jam Buka</span><span class="icard-val"><%= taman.jam_buka ? String(taman.jam_buka).slice(0,5) : '--' %> – <%= taman.jam_tutup ? String(taman.jam_tutup).slice(0,5) : '--' %></span></div>
+      <div class="icard"><span class="icard-icon">🎫</span><span class="icard-label">Tiket</span><span class="icard-val"><% if(taman.tiket_masuk==0){ %>Gratis<% }else{ %>Rp <%= parseInt(taman.tiket_masuk).toLocaleString('id-ID') %><% } %></span></div>
+      <div class="icard"><span class="icard-icon">📐</span><span class="icard-label">Luas</span><span class="icard-val"><%= taman.luas_m2 ? parseInt(taman.luas_m2).toLocaleString('id-ID')+' m²' : 'N/A' %></span></div>
+      <div class="icard"><span class="icard-icon">🏘️</span><span class="icard-label">Kecamatan</span><span class="icard-val"><%= taman.kecamatan %></span></div>
+    </div>
+
+    <!-- Deskripsi -->
+    <div class="dsection">
+      <h2>Tentang Taman</h2>
+      <p><%= taman.deskripsi || 'Informasi deskripsi belum tersedia.' %></p>
+    </div>
+
+    <!-- Fasilitas -->
+    <% if(fasilitas.length > 0) { %>
+    <div class="dsection">
+      <h2>Fasilitas Tersedia (<%= fasilitas.length %>)</h2>
+      <div class="fas-grid">
+        <% fasilitas.forEach(f => { %>
+        <div class="fas-item">
+          <span><%= getFasilitasIcon(f.nama) %></span>
+          <span><%= f.nama %></span>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Galeri -->
+    <% if(foto.length > 0) { %>
+    <div class="dsection">
+      <h2>Galeri Foto (<%= foto.length %>)</h2>
+      <div class="galeri-grid">
+        <% foto.forEach(f => { %>
+        <div class="galeri-item" onclick="openLightbox('<%= f.url %>')">
+          <img src="<%= f.url %>" alt="<%= f.keterangan %>"
+               onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=400'">
+          <% if(f.keterangan) { %><div class="galeri-cap"><%= f.keterangan %></div><% } %>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Peta Detail dengan Polygon -->
+    <div class="dsection">
+      <h2>Lokasi & Area Taman</h2>
+      <div class="map-legend-inline">
+        <label><input type="checkbox" id="togglePoly" onchange="toggleDetailPolygon()"> Tampilkan area taman (simulasi)</label>
+      </div>
+      <div id="detailMap" class="detail-map"></div>
+      <% if(taman.gmaps_url) { %>
+      <a href="<%= taman.gmaps_url %>" target="_blank" class="btn-maps">🗺️ Buka di Google Maps</a>
+      <% } %>
+    </div>
+
+    <!-- Rating & Ulasan -->
+    <div class="dsection">
+      <h2>Ulasan Pengunjung</h2>
+
+      <!-- Rating summary -->
+      <div class="rating-summary">
+        <div class="rating-big">
+          <span class="rating-num"><%= taman.rating_avg %></span>
+          <div class="rating-stars">
+            <% for(let i=1;i<=5;i++) { %>
+            <span class="<%= i <= Math.round(taman.rating_avg) ? 'star-on':'star-off' %>">★</span>
+            <% } %>
+          </div>
+          <span class="rating-total"><%= taman.jumlah_ulasan %> ulasan</span>
+        </div>
+        <div class="rating-bars">
+          <% for(let b=5;b>=1;b--) { %>
+          <% const rd = ratingDist.find(r=>r.bintang==b); %>
+          <% const pct = taman.jumlah_ulasan > 0 ? Math.round((rd?.jumlah||0)/taman.jumlah_ulasan*100) : 0; %>
+          <div class="rbar-row">
+            <span class="rbar-label"><%= b %>★</span>
+            <div class="rbar-track"><div class="rbar-fill" style="width:<%= pct %>%"></div></div>
+            <span class="rbar-pct"><%= pct %>%</span>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Form ulasan -->
+      <div class="ulasan-form">
+        <h3>✍️ Tulis Ulasan</h3>
+        <div class="star-picker" id="starPicker">
+          <% for(let i=1;i<=5;i++) { %>
+          <span class="spick" data-val="<%= i %>" onclick="setRating(<%= i %>)">★</span>
+          <% } %>
+        </div>
+        <input type="hidden" id="ratingVal" value="5">
+        <textarea id="komentarInput" placeholder="Ceritakan pengalamanmu di taman ini..." rows="3"></textarea>
+        <input type="text" id="usernameInput" placeholder="Nama kamu (opsional)">
+        <button onclick="kirimUlasan(<%= taman.id %>)" class="btn-primary">Kirim Ulasan</button>
+        <div id="ulasanMsg" style="margin-top:8px;font-size:13px"></div>
+      </div>
+
+      <!-- List ulasan -->
+      <div id="ulasanList">
+        <% if(ulasan.length===0) { %>
+        <div class="no-ulasan">Belum ada ulasan. Jadilah yang pertama! 🌟</div>
+        <% } else { %>
+        <% ulasan.forEach(u => { %>
+        <div class="ulasan-item">
+          <div class="ulasan-head">
+            <div class="ulasan-av"><%= (u.username||'A')[0].toUpperCase() %></div>
+            <div>
+              <div class="ulasan-name"><%= u.username %></div>
+              <div class="ulasan-date"><%= new Date(u.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}) %></div>
+            </div>
+            <div class="ulasan-stars ml-auto">
+              <% for(let i=1;i<=5;i++) { %><span class="<%= i<=u.rating?'star-on':'star-off' %>">★</span><% } %>
+            </div>
+          </div>
+          <% if(u.komentar) { %><p class="ulasan-komentar"><%= u.komentar %></p><% } %>
+        </div>
+        <% }) %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="detail-sidebar">
+    <div class="sidebar-card">
+      <h3>📍 Taman Terdekat</h3>
+      <% terdekat.forEach(t => { %>
+      <a href="/taman/<%= t.id %>" class="nearby-item">
+        <img src="<%= t.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=200' %>"
+             onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=200'" alt="">
+        <div>
+          <div class="nearby-name"><%= t.nama_taman %></div>
+          <div class="nearby-info">📍 <%= t.jarak_km %> km · ⭐ <%= t.rating_avg %></div>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+    <div class="sidebar-card" style="margin-top:16px">
+      <h3>⚖️ Bandingkan</h3>
+      <p style="font-size:13px;color:#666;margin:8px 0">Bandingkan taman ini dengan taman lain</p>
+      <a href="/taman/bandingkan?id1=<%= taman.id %>" class="btn-outline-sm">Pilih untuk Dibandingkan</a>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:none;align-items:center;justify-content:center">
+  <img id="lbImg" style="max-width:90vw;max-height:90vh;border-radius:12px">
+</div>
+
+<%- include('partials/footer') %>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Detail map
+const lat = <%= taman.latitude %>, lng = <%= taman.longitude %>;
+const dmap = L.map('detailMap').setView([lat, lng], 16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(dmap);
+const icon = L.divIcon({ html:'<div class="pmarker" style="background:#2d6a4f">🌿</div>', className:'', iconSize:[38,38], iconAnchor:[19,19] });
+L.marker([lat,lng],{icon}).addTo(dmap)
+  .bindPopup('<b><%= taman.nama_taman %></b><br><small><%= taman.alamat %></small>').openPopup();
+
+// Polygon simulasi
+function generatePolygon(lat, lng, luasM2) {
+  const luas = luasM2 || 5000;
+  const r = Math.sqrt(luas) / 111320 * 0.5;
+  const pts = [], sides = 10;
+  for (let i=0;i<sides;i++) {
+    const angle = (i/sides)*2*Math.PI;
+    const v = 0.7+Math.random()*0.6;
+    pts.push([lat+r*v*Math.sin(angle), lng+r*v*Math.cos(angle)]);
+  }
+  return pts;
+}
+let detailPoly = null;
+function toggleDetailPolygon() {
+  if (document.getElementById('togglePoly').checked) {
+    const pts = generatePolygon(lat, lng, <%= taman.luas_m2 || 5000 %>);
+    detailPoly = L.polygon(pts, {color:'#2d6a4f',fillColor:'#52b788',fillOpacity:0.3,weight:2}).addTo(dmap);
+    dmap.fitBounds(detailPoly.getBounds().pad(0.1));
+  } else {
+    if (detailPoly) dmap.removeLayer(detailPoly);
+    dmap.setView([lat,lng],16);
+  }
+}
+
+// Star picker
+let selectedRating = 5;
+document.querySelectorAll('.spick').forEach((s,i) => {
+  s.style.color = '#f4a261';
+  s.addEventListener('mouseover', () => {
+    document.querySelectorAll('.spick').forEach((x,j) => x.style.color = j<=i?'#f4a261':'#ddd');
+  });
+  s.addEventListener('mouseout', () => {
+    document.querySelectorAll('.spick').forEach((x,j) => x.style.color = j<selectedRating?'#f4a261':'#ddd');
+  });
+});
+function setRating(val) {
+  selectedRating = val;
+  document.getElementById('ratingVal').value = val;
+}
+
+async function kirimUlasan(id) {
+  const msg = document.getElementById('ulasanMsg');
+  const btn = document.querySelector('.ulasan-form .btn-primary');
+  btn.disabled = true; btn.textContent = 'Mengirim...';
+  try {
+    const res = await fetch(`/api/taman/${id}/ulasan`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        rating: selectedRating,
+        komentar: document.getElementById('komentarInput').value,
+        username: document.getElementById('usernameInput').value
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      msg.innerHTML = '<span style="color:#2d6a4f">✅ Ulasan berhasil dikirim! Refresh untuk melihat.</span>';
+      document.getElementById('komentarInput').value = '';
+      document.getElementById('usernameInput').value = '';
+    } else {
+      msg.innerHTML = `<span style="color:red">❌ ${data.message}</span>`;
+    }
+  } catch(e) {
+    msg.innerHTML = '<span style="color:red">❌ Gagal terhubung ke server.</span>';
+  }
+  btn.disabled = false; btn.textContent = 'Kirim Ulasan';
+}
+
+function openLightbox(url) {
+  document.getElementById('lbImg').src = url;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Peta Taman — TamanMedan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/peta.css">
+  <style>
+    /* ── ROUTING BAR ── */
+    .routing-bar {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 800; background: #fff;
+      border-radius: 14px; box-shadow: 0 4px 24px rgba(0,0,0,.18);
+      padding: 16px 20px 14px; min-width: 340px; max-width: 94vw;
+      display: none; flex-direction: column; gap: 10px;
+    }
+    .routing-bar.visible { display: flex; }
+    .routing-bar h4 { margin: 0; font-size: 14px; font-weight: 700; color: #1a2e1a; padding-right: 24px; }
+    .routing-bar .route-info { font-size: 13px; color: #333; }
+    .routing-bar .route-steps {
+      font-size: 12px; color: #444; max-height: 130px;
+      overflow-y: auto; background: #f8faf7; border-radius: 8px; padding: 8px 10px;
+      line-height: 1.8;
+    }
+    .route-close {
+      position: absolute; top: 12px; right: 14px;
+      background: #f0f0f0; border: none; border-radius: 50%;
+      width: 26px; height: 26px; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #555; transition: background .15s;
+    }
+    .route-close:hover { background: #e0e0e0; }
+    .routing-loading { font-size: 13px; color: #2d7a27; font-style: italic; }
+
+    /* ── TOMBOL RUTE ── */
+    .btn-rute {
+      display: block; width: 100%;
+      background: #2563eb; color: #fff;
+      text-align: center; padding: 10px;
+      border-radius: 8px; border: none;
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 8px; transition: background .2s;
+    }
+    .btn-rute:hover { background: #1d4ed8; }
+    .btn-rute:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* ── LABEL KECAMATAN ── */
+    .kec-label {
+      font-size: 10px; font-weight: 700; color: #333;
+      background: rgba(255,255,255,0.75); border: none;
+      box-shadow: none; padding: 1px 4px; border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* ── TOGGLE KECAMATAN ── */
+    .kec-toggle-card {
+      margin: 0 12px 4px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px; padding: 12px 14px;
+    }
+    .kec-toggle-card .kec-toggle-title {
+      font-size: 10px; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; color: rgba(255,255,255,0.45);
+      margin-bottom: 10px;
+    }
+    .kec-toggle-row {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+    }
+    .kec-toggle-desc { flex: 1; }
+    .kec-toggle-desc span {
+      font-size: 13px; color: rgba(255,255,255,0.92); font-weight: 500; display: block;
+    }
+    .kec-toggle-desc small {
+      font-size: 11px; color: rgba(255,255,255,0.45); display: block; margin-top: 2px;
+    }
+    /* switch */
+    .kec-switch-wrap { position: relative; display: inline-block; }
+    .kec-switch-wrap input { display: none; }
+    .kec-switch-track {
+      display: block; width: 44px; height: 25px;
+      background: rgba(255,255,255,0.2); border-radius: 13px;
+      cursor: pointer; transition: background .25s; position: relative;
+    }
+    .kec-switch-track::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 19px; height: 19px; background: #fff; border-radius: 50%;
+      transition: left .25s; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    .kec-switch-wrap input:checked + .kec-switch-track { background: #4ade80; }
+    .kec-switch-wrap input:checked + .kec-switch-track::after { left: 22px; }
+  </style>
+</head>
+<body class="peta-page">
+<%- include('partials/navbar') %>
+
+<div class="peta-layout">
+  <!-- SIDEBAR -->
+  <div class="peta-sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <h2>🗺️ Peta Taman</h2>
+      <p><span id="tamanCount"><%= taman.length %></span> taman ditemukan</p>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" id="searchPeta" placeholder="🔍 Cari nama taman..." oninput="filterPeta()">
+    </div>
+
+    <div class="sidebar-filter">
+      <label>Kategori</label>
+      <div class="filter-chips" id="filterKat">
+        <button class="chip active" data-val="">Semua</button>
+        <% kategori.forEach(k => { %>
+        <button class="chip" data-val="<%= k.nama %>"><%= k.nama %></button>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="sidebar-filter">
+      <label>Kecamatan</label>
+      <select id="filterKec" onchange="filterPeta()">
+        <option value="">Semua Kecamatan</option>
+        <% kecamatan.forEach(k => { %>
+        <option value="<%= k.nama %>"><%= k.nama %></option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="sidebar-filter">
+      <label>Tiket Masuk</label>
+      <div class="filter-chips">
+        <button class="chip active" data-tiket="" onclick="setTiket(this,'')">Semua</button>
+        <button class="chip" data-tiket="gratis" onclick="setTiket(this,'gratis')">Gratis</button>
+        <button class="chip" data-tiket="bayar" onclick="setTiket(this,'bayar')">Berbayar</button>
+      </div>
+    </div>
+
+    <!-- Toggle Batas Kecamatan -->
+    <div class="kec-toggle-card">
+      <div class="kec-toggle-title">Tampilan Peta</div>
+      <div class="kec-toggle-row">
+        <div class="kec-toggle-desc">
+          <span>🗂️ Batas Kecamatan</span>
+          <small>Tampilkan area tiap kecamatan</small>
+        </div>
+        <label class="kec-switch-wrap">
+          <input type="checkbox" id="showKecamatan" onchange="toggleKecamatan()">
+          <span class="kec-switch-track"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-list" id="tamanList">
+      <% taman.forEach(t => { %>
+      <div class="slist-item" data-id="<%= t.id %>"
+           data-kat="<%= t.kategori %>" data-kec="<%= t.kecamatan %>"
+           data-tiket="<%= t.tiket_masuk==0?'gratis':'bayar' %>"
+           data-nama="<%= t.nama_taman.toLowerCase() %>"
+           data-id="<%= t.id %>" data-lat="<%= t.latitude || 0 %>" data-lng="<%= t.longitude || 0 %>"
+           onclick="focusTamanEl(this)">
+        <img src="<%= t.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=200' %>"
+             onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=200'"
+             alt="<%= t.nama_taman %>">
+        <div class="slist-info">
+          <div class="slist-name"><%= t.nama_taman %></div>
+          <div class="slist-meta">📍 <%= t.kecamatan %></div>
+          <div class="slist-meta">⭐ <%= t.rating_avg %> · <%= t.tiket_masuk==0 ? '✅ Gratis' : 'Berbayar' %></div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="peta-map-wrap">
+    <div id="map"></div>
+
+    <div class="map-controls">
+      <button class="map-ctrl-btn" onclick="resetView()" title="Reset tampilan">🏠</button>
+      <button class="map-ctrl-btn" onclick="locateMe()" title="Lokasi saya">📍</button>
+      <button class="map-ctrl-btn" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+    </div>
+
+    <!-- Info panel -->
+    <div class="map-info-panel" id="infoPanel" style="display:none">
+      <button class="panel-close" onclick="closePanel()">✕</button>
+      <div id="panelContent"></div>
+    </div>
+
+    <!-- ROUTING BAR -->
+    <div class="routing-bar" id="routingBar">
+      <button class="route-close" onclick="clearRoute()" title="Tutup">✕</button>
+      <h4 id="routeTitle">🧭 Rute ke Taman</h4>
+      <p class="routing-loading" id="routeLoading">⏳ Menghitung rute...</p>
+      <p class="route-info" id="routeInfo" style="display:none"></p>
+      <div class="route-steps" id="routeSteps" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script id="taman-raw" type="application/json"><%- JSON.stringify(taman.map(t=>({
+  id: t.id, nama: t.nama_taman, alamat: t.alamat,
+  lat: parseFloat(t.latitude), lng: parseFloat(t.longitude),
+  foto: t.photo_url, luas: t.luas_m2,
+  jam_buka: t.jam_buka, jam_tutup: t.jam_tutup,
+  tiket: t.tiket_masuk, kategori: t.kategori,
+  kecamatan: t.kecamatan, rating: t.rating_avg,
+  ulasan: t.jumlah_ulasan,
+  fasilitas: t.fasilitas || []
+}))) %></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const tamanData = JSON.parse(document.getElementById('taman-raw').textContent);
+
+const katColors = {
+  'Taman Kota':'#1b6ca8','Taman Bermain':'#27ae60','Taman Edukasi':'#e67e22',
+  'Taman Olahraga':'#e74c3c','Taman Wisata':'#8e44ad'
+};
+const defaultColor = '#2d6a4f';
+
+// ── INIT MAP ────────────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: false }).setView([3.5952, 98.6722], 13);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap', maxZoom: 19
+}).addTo(map);
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+const markers = {};
+const markerLayer = L.layerGroup().addTo(map);
+let kecamatanLayer = L.layerGroup();
+let routeLayer = null;
+let userLocation = null;
+let userMarker = null;
+let filterKat = '', filterKec = '', filterTiket = '';
+
+// ── MARKERS ──────────────────────────────────────────────────────────────────
+tamanData.forEach(t => {
+  if (!t.lat || !t.lng || isNaN(t.lat)) return;
+  const color = katColors[t.kategori] || defaultColor;
+  const icon = L.divIcon({
+    html: `<div class="pmarker" style="background:${color}">🌿</div>`,
+    className: '', iconSize: [38, 38], iconAnchor: [19, 19]
+  });
+  const marker = L.marker([t.lat, t.lng], { icon }).addTo(markerLayer);
+  marker.on('click', () => showPanel(t));
+  markers[t.id] = { marker, data: t };
+});
+
+// ── LINGKARAN KECAMATAN MEDAN ─────────────────────────────────────────────────
+// Titik tengah tiap kecamatan + radius estimasi (meter)
+const kecamatanCircles = [
+  { nama:'Medan Kota',       lat:3.5635, lng:98.6720, r:1200 },
+  { nama:'Medan Maimun',     lat:3.5730, lng:98.6640, r:900  },
+  { nama:'Medan Baru',       lat:3.5830, lng:98.6560, r:1100 },
+  { nama:'Medan Polonia',    lat:3.5830, lng:98.6720, r:1000 },
+  { nama:'Medan Petisah',    lat:3.5990, lng:98.6590, r:1100 },
+  { nama:'Medan Barat',      lat:3.6050, lng:98.6540, r:1000 },
+  { nama:'Medan Helvetia',   lat:3.6230, lng:98.6360, r:1400 },
+  { nama:'Medan Sunggal',    lat:3.5960, lng:98.6340, r:1300 },
+  { nama:'Medan Selayang',   lat:3.6180, lng:98.6170, r:1300 },
+  { nama:'Medan Tuntungan',  lat:3.6420, lng:98.6060, r:1600 },
+  { nama:'Medan Johor',      lat:3.5580, lng:98.6530, r:1300 },
+  { nama:'Medan Amplas',     lat:3.5380, lng:98.6720, r:1200 },
+  { nama:'Medan Denai',      lat:3.5560, lng:98.6950, r:1200 },
+  { nama:'Medan Area',       lat:3.5660, lng:98.6890, r:900  },
+  { nama:'Medan Perjuangan', lat:3.5810, lng:98.7040, r:1000 },
+  { nama:'Medan Tembung',    lat:3.5960, lng:98.7230, r:1200 },
+  { nama:'Medan Timur',      lat:3.5990, lng:98.7010, r:1000 },
+  { nama:'Medan Deli',       lat:3.6260, lng:98.7040, r:1400 },
+  { nama:'Medan Labuhan',    lat:3.6580, lng:98.7120, r:1500 },
+  { nama:'Medan Marelan',    lat:3.6650, lng:98.6600, r:1500 },
+  { nama:'Medan Belawan',    lat:3.7780, lng:98.6890, r:1800 },
+];
+
+const kecColors = [
+  '#e74c3c','#e67e22','#f39c12','#2ecc71','#1abc9c',
+  '#3498db','#9b59b6','#e91e63','#00bcd4','#8bc34a',
+  '#ff5722','#607d8b','#795548','#ff9800','#4caf50',
+  '#2196f3','#673ab7','#009688','#c0392b','#cddc39','#03a9f4'
+];
+
+function buildKecamatanLayer() {
+  kecamatanLayer.clearLayers();
+  kecamatanCircles.forEach((kec, idx) => {
+    const color = kecColors[idx % kecColors.length];
+
+    // Lingkaran utama
+    const circle = L.circle([kec.lat, kec.lng], {
+      radius: kec.r,
+      color: color,
+      weight: 2,
+      fillColor: color,
+      fillOpacity: 0.15,
+      dashArray: '6 4',
+    }).addTo(kecamatanLayer);
+
+    // Label nama di tengah lingkaran
+    const label = L.marker([kec.lat, kec.lng], {
+      icon: L.divIcon({
+        html: `<div style="
+          background:rgba(255,255,255,0.88);
+          color:${color};
+          font-size:10px;
+          font-weight:700;
+          font-family:'DM Sans',sans-serif;
+          padding:2px 7px;
+          border-radius:20px;
+          border:1.5px solid ${color};
+          white-space:nowrap;
+          box-shadow:0 1px 4px rgba(0,0,0,.15);
+          pointer-events:none;
+        ">${kec.nama}</div>`,
+        className: '',
+        iconAnchor: [0, 0],
+      })
+    }).addTo(kecamatanLayer);
+
+    // Klik lingkaran → filter kecamatan
+    circle.on('click', () => {
+      document.getElementById('filterKec').value = kec.nama;
+      filterPeta();
+    });
+
+    circle.bindTooltip(
+      `<strong>${kec.nama}</strong>`,
+      { sticky: true, className: 'kec-label' }
+    );
+  });
+}
+buildKecamatanLayer();
+
+// ── SHOW PANEL ───────────────────────────────────────────────────────────────
+function showPanel(t) {
+  const jam = t.jam_buka && t.jam_tutup
+    ? `${String(t.jam_buka).slice(0,5)} – ${String(t.jam_tutup).slice(0,5)}`
+    : 'N/A';
+  const tiket = t.tiket == 0
+    ? '<span style="color:#27ae60;font-weight:600">Gratis</span>'
+    : `Rp ${parseInt(t.tiket).toLocaleString('id-ID')}`;
+  const fasArr = Array.isArray(t.fasilitas) ? t.fasilitas : JSON.parse(t.fasilitas || '[]');
+
+  // Tombol rute: aktif jika lokasi sudah didapat, disabled dengan tooltip jika belum
+  const btnRute = userLocation
+    ? `<button class="btn-rute" onclick="getRoute(${t.lat}, ${t.lng}, '${t.nama.replace(/'/g,"\\'")}')">🧭 Tampilkan Rute ke Sini</button>`
+    : `<button class="btn-rute" style="background:#93c5fd;cursor:not-allowed;" onclick="alert('Aktifkan lokasi kamu dulu dengan tombol 📍 di pojok kanan peta.')">🧭 Aktifkan Lokasi Dulu</button>`;
+
+  document.getElementById('panelContent').innerHTML = `
+    <img src="${t.foto || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=400'}"
+         onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=400'"
+         style="width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:12px">
+    <h3 style="margin:0 0 6px;font-size:17px">${t.nama}</h3>
+    <p style="font-size:12px;color:#666;margin:0 0 12px">📍 ${t.alamat || t.kecamatan}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:13px">
+      <div><span style="color:#888">🕐 Jam</span><br><strong>${jam}</strong></div>
+      <div><span style="color:#888">🎫 Tiket</span><br><strong>${tiket}</strong></div>
+      <div><span style="color:#888">⭐ Rating</span><br><strong>${t.rating} (${t.ulasan})</strong></div>
+      <div><span style="color:#888">📐 Luas</span><br><strong>${t.luas ? parseInt(t.luas).toLocaleString('id-ID')+'m²' : 'N/A'}</strong></div>
+    </div>
+    ${fasArr.length ? `<div style="font-size:12px;color:#555;margin-bottom:10px">
+      <strong>Fasilitas:</strong> ${fasArr.slice(0,4).join(', ')}${fasArr.length>4?'...':''}
+    </div>` : ''}
+    ${btnRute}
+    <a href="/taman/${t.id}" style="display:block;background:#2d6a4f;color:white;text-align:center;padding:10px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;margin-top:8px">
+      Lihat Detail Lengkap →
+    </a>
+  `;
+  document.getElementById('infoPanel').style.display = 'block';
+
+  Object.values(markers).forEach(m => m.marker.getElement()?.querySelector('.pmarker')?.classList.remove('active'));
+  markers[t.id]?.marker.getElement()?.querySelector('.pmarker')?.classList.add('active');
+  document.querySelectorAll('.slist-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.slist-item[data-id="${t.id}"]`)?.classList.add('active');
+}
+
+function closePanel() {
+  document.getElementById('infoPanel').style.display = 'none';
+  Object.values(markers).forEach(m => m.marker.getElement()?.querySelector('.pmarker')?.classList.remove('active'));
+}
+
+function focusTamanEl(el) {
+  const id  = parseInt(el.dataset.id);
+  const lat = parseFloat(el.dataset.lat);
+  const lng = parseFloat(el.dataset.lng);
+  focusTaman(id, lat, lng);
+}
+
+function focusTaman(id, lat, lng) {
+  map.setView([lat, lng], 16, { animate: true });
+  showPanel(markers[id]?.data);
+  if (window.innerWidth < 768) toggleSidebar();
+}
+
+// ── ROUTING (OSRM) ───────────────────────────────────────────────────────────
+async function getRoute(destLat, destLng, nama) {
+  if (!userLocation) {
+    alert('Aktifkan lokasi kamu dulu dengan tombol 📍');
+    return;
+  }
+
+  // Reset routing bar
+  clearRoute();
+  const bar = document.getElementById('routingBar');
+  bar.classList.add('visible');
+  document.getElementById('routeTitle').textContent = `🧭 Rute ke ${nama}`;
+  document.getElementById('routeLoading').style.display = 'block';
+  document.getElementById('routeInfo').style.display = 'none';
+  document.getElementById('routeInfo').textContent = '';
+  document.getElementById('routeSteps').style.display = 'none';
+  document.getElementById('routeSteps').innerHTML = '';
+
+  const { lat: uLat, lng: uLng } = userLocation;
+  const url = `https://router.project-osrm.org/route/v1/driving/${uLng},${uLat};${destLng},${destLat}?overview=full&geometries=geojson&steps=true`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    document.getElementById('routeLoading').style.display = 'none';
+
+    if (data.code !== 'Ok' || !data.routes || !data.routes.length) {
+      document.getElementById('routeInfo').textContent = '⚠️ Rute tidak ditemukan oleh server.';
+      document.getElementById('routeInfo').style.display = 'block';
+      return;
+    }
+
+    const route  = data.routes[0];
+    const distKm = (route.distance / 1000).toFixed(1);
+    const durMen = Math.ceil(route.duration / 60);
+
+    // Info jarak & waktu
+    document.getElementById('routeInfo').innerHTML =
+      `📏 <strong>${distKm} km</strong> &nbsp;·&nbsp; ⏱ <strong>~${durMen} menit</strong> berkendara`;
+    document.getElementById('routeInfo').style.display = 'block';
+
+    // Gambar polyline rute
+    const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+    routeLayer = L.layerGroup().addTo(map);
+
+    L.polyline(coords, {
+      color: '#2563eb', weight: 5, opacity: 0.85, lineJoin: 'round'
+    }).addTo(routeLayer);
+
+    // Marker titik awal & tujuan
+    L.circleMarker([uLat, uLng], {
+      radius: 9, color: '#2563eb', fillColor: '#fff', fillOpacity: 1, weight: 3
+    }).addTo(routeLayer).bindPopup('📍 Lokasi Kamu');
+
+    L.circleMarker([destLat, destLng], {
+      radius: 9, color: '#e74c3c', fillColor: '#fff', fillOpacity: 1, weight: 3
+    }).addTo(routeLayer).bindPopup(`🌿 ${nama}`).openPopup();
+
+    // Fit bounds ke rute
+    const bounds = L.latLngBounds(coords);
+    map.fitBounds(bounds.pad(0.15), { animate: true });
+
+    // Langkah navigasi
+    const steps = route.legs[0]?.steps || [];
+    if (steps.length) {
+      const stepsEl = document.getElementById('routeSteps');
+      stepsEl.innerHTML = steps.slice(0, 12).map(s => {
+        const d = s.distance > 1000
+          ? `${(s.distance / 1000).toFixed(1)} km`
+          : `${Math.round(s.distance)} m`;
+        const instrMap = {
+          'turn-right': '↱ Belok kanan',
+          'turn-left':  '↰ Belok kiri',
+          'straight':   '↑ Lurus',
+          'arrive':     '🏁 Tiba',
+          'depart':     '🚦 Mulai',
+          'merge':      '↪ Gabung',
+          'roundabout': '🔄 Bundaran',
+        };
+        const type = s.maneuver?.type || '';
+        const mod  = s.maneuver?.modifier || '';
+        const key  = mod ? `${type}-${mod}` : type;
+        const instr = instrMap[key] || instrMap[type]
+          || (s.name ? `Menuju ${s.name}` : '↑ Lanjut');
+        return `<div style="padding:2px 0">▸ ${instr} <span style="color:#888;font-size:11px">(${d})</span></div>`;
+      }).join('');
+      stepsEl.style.display = 'block';
+    }
+
+  } catch (err) {
+    document.getElementById('routeLoading').style.display = 'none';
+    document.getElementById('routeInfo').textContent = '⚠️ Koneksi gagal. Periksa jaringan internet.';
+    document.getElementById('routeInfo').style.display = 'block';
+    console.error('Routing error:', err);
+  }
+}
+
+function clearRoute() {
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+  document.getElementById('routingBar').classList.remove('visible');
+}
+
+// ── LOCATE ME ────────────────────────────────────────────────────────────────
+function locateMe() {
+  map.locate({ setView: false, maxZoom: 16, enableHighAccuracy: true });
+  map.once('locationfound', e => {
+    userLocation = e.latlng;
+    if (userMarker) map.removeLayer(userMarker);
+    userMarker = L.marker(e.latlng, {
+      icon: L.divIcon({
+        html: '<div style="background:#3b82f6;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(0,0,0,.4)"></div>',
+        className: '', iconSize: [18,18], iconAnchor: [9,9]
+      })
+    }).addTo(map).bindPopup('📍 Lokasi Kamu').openPopup();
+    map.setView(e.latlng, 15, { animate: true });
+  });
+  map.once('locationerror', () => {
+    alert('Gagal mendapatkan lokasi. Pastikan GPS aktif dan izin lokasi diberikan di browser.');
+  });
+}
+
+// ── TOGGLE KECAMATAN ─────────────────────────────────────────────────────────
+function toggleKecamatan() {
+  const show = document.getElementById('showKecamatan').checked;
+  if (show) { kecamatanLayer.addTo(map); }
+  else      { map.removeLayer(kecamatanLayer); }
+}
+
+// ── FILTER ───────────────────────────────────────────────────────────────────
+function filterPeta() {
+  const q   = document.getElementById('searchPeta').value.toLowerCase();
+  filterKec = document.getElementById('filterKec').value;
+  let shown = 0;
+
+  document.querySelectorAll('.slist-item').forEach(item => {
+    const show = item.dataset.nama.includes(q)
+      && (!filterKat   || item.dataset.kat   === filterKat)
+      && (!filterKec   || item.dataset.kec   === filterKec)
+      && (!filterTiket || item.dataset.tiket === filterTiket);
+    item.style.display = show ? '' : 'none';
+    const id = parseInt(item.dataset.id);
+    if (markers[id]) {
+      if (show) { markers[id].marker.addTo(markerLayer); shown++; }
+      else markerLayer.removeLayer(markers[id].marker);
+    }
+  });
+  document.getElementById('tamanCount').textContent = shown;
+}
+
+document.querySelectorAll('#filterKat .chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#filterKat .chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterKat = btn.dataset.val;
+    filterPeta();
+  });
+});
+
+function setTiket(btn, val) {
+  document.querySelectorAll('[data-tiket]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterTiket = val;
+  filterPeta();
+}
+
+// ── MISC ─────────────────────────────────────────────────────────────────────
+function resetView() { map.setView([3.5952, 98.6722], 13); closePanel(); clearRoute(); }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('hidden'); }
+
+if (tamanData.filter(t => t.lat && !isNaN(t.lat)).length > 0) {
+  const g = L.featureGroup(tamanData.filter(t => t.lat && !isNaN(t.lat)).map(t => L.marker([t.lat, t.lng])));
+  map.fitBounds(g.getBounds().pad(0.1));
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<%
+  pageTitle = 'Kelola Ulasan';
+  activePage = 'ulasan';
+%>
+<%- include('_header') %>
+
+<% if (query && query.success) { %>
+<div class="alert alert-success">✅ Ulasan berhasil dihapus!</div>
+<% } %>
+
+<div class="card">
+  <div class="card-head">
+    <h2>⭐ Daftar Ulasan (<%= ulasan.length %>)</h2>
+    <span style="font-size:13px;color:#888;">100 ulasan terbaru</span>
+  </div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Taman</th>
+          <th>Pengguna</th>
+          <th>Rating</th>
+          <th>Komentar</th>
+          <th>Tanggal</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% ulasan.forEach((u, i) => { %>
+        <tr>
+          <td style="color:#999;"><%= i+1 %></td>
+          <td>
+            <a href="/taman/<%= u.taman_id %>" target="_blank" style="color:#2d7a27;text-decoration:none;font-weight:600;">
+              <%= u.nama_taman %>
+            </a>
+          </td>
+          <td><%= u.username %></td>
+          <td>
+            <span style="color:#f59e0b;font-weight:700;font-size:16px;">
+              <%= '★'.repeat(Math.round(u.rating)) %><span style="color:#ddd;"><%= '★'.repeat(5-Math.round(u.rating)) %></span>
+            </span>
+            <span style="font-size:12px;color:#666;"> <%= u.rating %>/5</span>
+          </td>
+          <td style="max-width:280px;">
+            <% if (u.komentar) { %>
+            <span style="font-size:13px;color:#444;"><%= u.komentar.substring(0,100) %><%= u.komentar.length > 100 ? '...' : '' %></span>
+            <% } else { %>
+            <span style="color:#bbb;font-size:13px;font-style:italic;">Tanpa komentar</span>
+            <% } %>
+          </td>
+          <td style="font-size:13px;color:#666;white-space:nowrap;">
+            <%= new Date(u.created_at).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) %>
+          </td>
+          <td>
+            <form method="POST" action="/admin/ulasan/<%= u.id %>/hapus" style="display:inline;"
+              onsubmit="return confirm('Hapus ulasan ini?')">
+              <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+        <% if (!ulasan.length) { %>
+        <tr><td colspan="7" style="text-align:center;padding:40px;color:#999;">Belum ada ulasan.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('_footer') %>

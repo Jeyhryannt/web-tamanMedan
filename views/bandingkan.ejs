@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bandingkan Taman — TamanMedan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/bandingkan.css">
+</head>
+<body>
+<%- include('partials/navbar') %>
+
+<div class="page-header">
+  <div class="container">
+    <h1>⚖️ Bandingkan Taman</h1>
+    <p>Pilih dua taman untuk dibandingkan secara detail</p>
+  </div>
+</div>
+
+<div class="container" style="padding:40px 24px">
+  <!-- Selector -->
+  <form method="GET" action="/taman/bandingkan" class="compare-selector">
+    <div class="cs-group">
+      <label>Taman Pertama</label>
+      <select name="id1" onchange="this.form.submit()">
+        <option value="">-- Pilih Taman --</option>
+        <% semua.forEach(t => { %>
+        <option value="<%= t.id %>" <%= taman1 && taman1.id==t.id ? 'selected':'' %>><%= t.nama_taman %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="cs-vs">VS</div>
+    <div class="cs-group">
+      <label>Taman Kedua</label>
+      <select name="id2" onchange="this.form.submit()">
+        <option value="">-- Pilih Taman --</option>
+        <% semua.forEach(t => { %>
+        <option value="<%= t.id %>" <%= taman2 && taman2.id==t.id ? 'selected':'' %>><%= t.nama_taman %></option>
+        <% }) %>
+      </select>
+    </div>
+  </form>
+
+  <% if (taman1 && taman2) { %>
+  <!-- Comparison table -->
+  <div class="compare-grid">
+    <!-- Header -->
+    <div class="cmp-label"></div>
+    <div class="cmp-head">
+      <img src="<%= taman1.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=400' %>"
+           onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=400'" alt="">
+      <h3><%= taman1.nama_taman %></h3>
+      <a href="/taman/<%= taman1.id %>" class="btn-detail">Lihat Detail</a>
+    </div>
+    <div class="cmp-head">
+      <img src="<%= taman2.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=400' %>"
+           onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=400'" alt="">
+      <h3><%= taman2.nama_taman %></h3>
+      <a href="/taman/<%= taman2.id %>" class="btn-detail">Lihat Detail</a>
+    </div>
+
+    <!-- Rows -->
+    <% const rows = [
+      ['Kategori', taman1.kategori, taman2.kategori, false],
+      ['Kecamatan', taman1.kecamatan, taman2.kecamatan, false],
+      ['Rating', taman1.rating_avg+'★', taman2.rating_avg+'★', true],
+      ['Jumlah Ulasan', taman1.jumlah_ulasan+' ulasan', taman2.jumlah_ulasan+' ulasan', true],
+      ['Luas Area', taman1.luas_m2 ? parseInt(taman1.luas_m2).toLocaleString('id-ID')+' m²' : 'N/A', taman2.luas_m2 ? parseInt(taman2.luas_m2).toLocaleString('id-ID')+' m²' : 'N/A', true],
+      ['Tiket Masuk', taman1.tiket_masuk==0?'Gratis':'Rp '+parseInt(taman1.tiket_masuk).toLocaleString('id-ID'), taman2.tiket_masuk==0?'Gratis':'Rp '+parseInt(taman2.tiket_masuk).toLocaleString('id-ID'), false],
+      ['Jam Buka', taman1.jam_buka?String(taman1.jam_buka).slice(0,5):'N/A', taman2.jam_buka?String(taman2.jam_buka).slice(0,5):'N/A', false],
+      ['Jam Tutup', taman1.jam_tutup?String(taman1.jam_tutup).slice(0,5):'N/A', taman2.jam_tutup?String(taman2.jam_tutup).slice(0,5):'N/A', false],
+      ['Status', taman1.status, taman2.status, false],
+    ]; %>
+
+    <% rows.forEach(([label, val1, val2, numeric]) => { %>
+    <div class="cmp-label"><%= label %></div>
+    <div class="cmp-val <%= numeric && parseFloat(val1) > parseFloat(val2) ? 'win' : '' %>"><%= val1 %></div>
+    <div class="cmp-val <%= numeric && parseFloat(val2) > parseFloat(val1) ? 'win' : '' %>"><%= val2 %></div>
+    <% }) %>
+
+    <!-- Fasilitas -->
+    <div class="cmp-label">Fasilitas</div>
+    <div class="cmp-val">
+      <% const f1 = Array.isArray(taman1.fasilitas) ? taman1.fasilitas : JSON.parse(taman1.fasilitas||'[]'); %>
+      <% f1.forEach(f => { %><span class="fas-chip"><%= f %></span><% }) %>
+      <% if(!f1.length) { %><em style="color:#999">Tidak ada data</em><% } %>
+    </div>
+    <div class="cmp-val">
+      <% const f2 = Array.isArray(taman2.fasilitas) ? taman2.fasilitas : JSON.parse(taman2.fasilitas||'[]'); %>
+      <% f2.forEach(f => { %><span class="fas-chip"><%= f %></span><% }) %>
+      <% if(!f2.length) { %><em style="color:#999">Tidak ada data</em><% } %>
+    </div>
+  </div>
+
+  <!-- Verdict -->
+  <div class="compare-verdict">
+    <h3>🏆 Ringkasan</h3>
+    <div class="verdict-grid">
+      <div class="verdict-item">
+        <span class="vcat">Rating Lebih Tinggi</span>
+        <span class="vwin"><%= taman1.rating_avg >= taman2.rating_avg ? taman1.nama_taman : taman2.nama_taman %></span>
+      </div>
+      <div class="verdict-item">
+        <span class="vcat">Lebih Luas</span>
+        <span class="vwin"><%= (taman1.luas_m2||0) >= (taman2.luas_m2||0) ? taman1.nama_taman : taman2.nama_taman %></span>
+      </div>
+      <div class="verdict-item">
+        <span class="vcat">Lebih Banyak Fasilitas</span>
+        <%
+          const fl1 = Array.isArray(taman1.fasilitas) ? taman1.fasilitas : JSON.parse(taman1.fasilitas||'[]');
+          const fl2 = Array.isArray(taman2.fasilitas) ? taman2.fasilitas : JSON.parse(taman2.fasilitas||'[]');
+        %>
+        <span class="vwin"><%= fl1.length >= fl2.length ? taman1.nama_taman : taman2.nama_taman %></span>
+      </div>
+      <div class="verdict-item">
+        <span class="vcat">Lebih Banyak Ulasan</span>
+        <span class="vwin"><%= taman1.jumlah_ulasan >= taman2.jumlah_ulasan ? taman1.nama_taman : taman2.nama_taman %></span>
+      </div>
+    </div>
+  </div>
+
+  <% } else { %>
+  <div class="compare-empty">
+    <div style="font-size:60px">⚖️</div>
+    <h3>Pilih dua taman untuk dibandingkan</h3>
+    <p>Gunakan dropdown di atas untuk memilih taman yang ingin dibandingkan</p>
+  </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>
+<script src="/js/main.js"></script>
+</body>
+</html>

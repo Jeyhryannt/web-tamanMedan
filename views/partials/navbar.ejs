@@ -1,0 +1,33 @@
+<!-- views/partials/navbar.ejs -->
+<nav class="navbar">
+  <a href="/" class="nav-brand">
+    <span>🌿</span><span>TamanMedan</span>
+  </a>
+  <div class="nav-links">
+    <a href="/"       class="nav-link <%= page==='home'  ? 'active' : '' %>">Beranda</a>
+    <a href="/peta"   class="nav-link <%= page==='peta'  ? 'active' : '' %>">🗺️ Peta</a>
+    <a href="/taman"  class="nav-link <%= page==='taman' ? 'active' : '' %>">🌳 Taman</a>
+    <a href="/about"  class="nav-link <%= page==='about' ? 'active' : '' %>">ℹ️ Tentang</a>
+    <a href="/admin" class="nav-link nav-admin-btn">⚙️ Admin</a>
+  </div>
+  <button class="nav-toggle" onclick="toggleNav()">☰</button>
+</nav>
+<div class="nav-mobile" id="navMobile">
+  <a href="/"      class="<%= page==='home'  ? 'active' : '' %>">Beranda</a>
+  <a href="/peta"  class="<%= page==='peta'  ? 'active' : '' %>">🗺️ Peta</a>
+  <a href="/taman" class="<%= page==='taman' ? 'active' : '' %>">🌳 Taman</a>
+  <a href="/about" class="<%= page==='about' ? 'active' : '' %>">ℹ️ Tentang</a>
+  <a href="/admin">⚙️ Admin</a>
+</div>
+<style>
+  .nav-admin-btn {
+    background: #2d7a27 !important;
+    color: #fff !important;
+    border-radius: 8px;
+    padding: 6px 14px !important;
+    font-weight: 600 !important;
+    margin-left: 8px;
+    transition: background .2s;
+  }
+  .nav-admin-btn:hover { background: #235e1e !important; }
+</style>

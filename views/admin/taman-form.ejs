@@ -1,0 +1,207 @@
+<%
+  pageTitle = mode === 'tambah' ? 'Tambah Taman' : 'Edit Taman';
+  activePage = 'taman';
+  const v = taman || {};
+%>
+<%- include('_header') %>
+
+<div style="margin-bottom:20px;">
+  <a href="/admin/taman" class="btn btn-secondary">← Kembali ke Daftar Taman</a>
+</div>
+
+<% if (error) { %>
+<div class="alert alert-error">⚠️ <%= error %></div>
+<% } %>
+
+<div class="card" style="max-width:900px;">
+  <div class="card-head">
+    <h2><%= mode === 'tambah' ? '➕ Tambah Taman Baru' : '✏️ Edit Taman' %></h2>
+    <% if (mode === 'edit' && v.id) { %>
+    <a href="/taman/<%= v.id %>" target="_blank" class="btn btn-secondary btn-sm">👁️ Lihat di Website</a>
+    <% } %>
+  </div>
+
+  <form
+    method="POST"
+    action="<%= mode === 'tambah' ? '/admin/taman/tambah' : '/admin/taman/' + v.id + '/edit' %>"
+    style="padding:28px 24px;"
+  >
+    <!-- SEKSI: INFORMASI DASAR -->
+    <div style="margin-bottom:28px;">
+      <h3 style="font-size:14px;font-weight:700;color:#2d7a27;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;">📋 Informasi Dasar</h3>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Nama Taman <span style="color:red">*</span></label>
+          <input type="text" name="nama_taman" class="form-control"
+            value="<%= v.nama_taman || '' %>"
+            placeholder="cth. Taman Beringin" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori <span style="color:red">*</span></label>
+          <select name="kategori_id" class="form-control" required>
+            <option value="">-- Pilih Kategori --</option>
+            <% kategoriList.forEach(k => { %>
+            <option value="<%= k.id %>" <%= (v.kategori_id == k.id) ? 'selected' : '' %>><%= k.nama %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kecamatan <span style="color:red">*</span></label>
+          <select name="kecamatan_id" class="form-control" required>
+            <option value="">-- Pilih Kecamatan --</option>
+            <% kecamatanList.forEach(k => { %>
+            <option value="<%= k.id %>" <%= (v.kecamatan_id == k.id) ? 'selected' : '' %>><%= k.nama %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Alamat Lengkap</label>
+          <input type="text" name="alamat" class="form-control"
+            value="<%= v.alamat || '' %>"
+            placeholder="cth. Jl. Sudirman No.1, Medan">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Deskripsi</label>
+          <textarea name="deskripsi" class="form-control" rows="4"
+            placeholder="Ceritakan tentang taman ini..."><%= v.deskripsi || '' %></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKSI: LOKASI -->
+    <div style="margin-bottom:28px;padding-top:20px;border-top:1px solid #f0f4ef;">
+      <h3 style="font-size:14px;font-weight:700;color:#2d7a27;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;">📍 Lokasi & Ukuran</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Latitude</label>
+          <input type="number" step="any" name="latitude" class="form-control"
+            value="<%= v.latitude || '' %>"
+            placeholder="cth. 3.5952">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Longitude</label>
+          <input type="number" step="any" name="longitude" class="form-control"
+            value="<%= v.longitude || '' %>"
+            placeholder="cth. 98.6722">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Luas (m²)</label>
+          <input type="number" name="luas_m2" class="form-control"
+            value="<%= v.luas_m2 || '' %>"
+            placeholder="cth. 5000">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <div style="flex:1;">
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:13px;color:#15803d;">
+              💡 Buka <a href="https://maps.google.com" target="_blank" style="color:#15803d;">Google Maps</a>, klik lokasi taman, salin koordinat lat/lng.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKSI: OPERASIONAL -->
+    <div style="margin-bottom:28px;padding-top:20px;border-top:1px solid #f0f4ef;">
+      <h3 style="font-size:14px;font-weight:700;color:#2d7a27;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;">⏰ Operasional & Tiket</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Jam Buka</label>
+          <input type="time" name="jam_buka" class="form-control"
+            value="<%= v.jam_buka || '' %>">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Jam Tutup</label>
+          <input type="time" name="jam_tutup" class="form-control"
+            value="<%= v.jam_tutup || '' %>">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Harga Tiket Masuk (Rp)</label>
+          <input type="number" min="0" name="tiket_masuk" class="form-control"
+            value="<%= v.tiket_masuk !== undefined ? v.tiket_masuk : 0 %>"
+            placeholder="0 = Gratis">
+          <div style="font-size:12px;color:#888;margin-top:4px;">Isi 0 jika gratis</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control">
+            <option value="aktif"    <%= (v.status || 'aktif') === 'aktif'    ? 'selected' : '' %>>✅ Aktif</option>
+            <option value="nonaktif" <%= (v.status || 'aktif') === 'nonaktif' ? 'selected' : '' %>>🚫 Non-aktif</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKSI: FOTO -->
+    <div style="margin-bottom:28px;padding-top:20px;border-top:1px solid #f0f4ef;">
+      <h3 style="font-size:14px;font-weight:700;color:#2d7a27;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;">📷 Foto</h3>
+      <div class="form-group">
+        <label class="form-label">URL Foto Utama</label>
+        <input type="url" name="photo_url" class="form-control" id="photoUrl"
+          value="<%= v.photo_url || '' %>"
+          placeholder="https://... (URL gambar)"
+          oninput="previewPhoto(this.value)">
+        <div style="font-size:12px;color:#888;margin-top:4px;">Gunakan URL gambar dari internet (Google Drive, Imgur, dll)</div>
+      </div>
+      <div id="photoPreview" style="margin-top:12px;display:<%= v.photo_url ? 'block' : 'none' %>;">
+        <img id="previewImg" src="<%= v.photo_url || '' %>"
+          style="max-width:320px;max-height:200px;border-radius:10px;border:2px solid #e5e7eb;object-fit:cover;"
+          onerror="this.style.display='none'">
+      </div>
+    </div>
+
+    <!-- SEKSI: FASILITAS -->
+    <div style="margin-bottom:32px;padding-top:20px;border-top:1px solid #f0f4ef;">
+      <h3 style="font-size:14px;font-weight:700;color:#2d7a27;text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;">🛝 Fasilitas Tersedia</h3>
+      <div class="fasilitas-grid">
+        <% fasilitasList.forEach(f => { %>
+        <label class="fasilitas-item">
+          <input type="checkbox" name="fasilitas" value="<%= f.id %>"
+            <%= fasilitasTerpilih.includes(f.id) ? 'checked' : '' %>>
+          <%= f.nama %>
+        </label>
+        <% }) %>
+        <% if (!fasilitasList.length) { %>
+        <p style="color:#999;font-size:13px;grid-column:1/-1;">Belum ada fasilitas. <a href="/admin/fasilitas">Tambah fasilitas dulu</a>.</p>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- TOMBOL AKSI -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;padding-top:20px;border-top:1px solid #f0f4ef;">
+      <button type="submit" class="btn btn-primary">
+        <%= mode === 'tambah' ? '✅ Simpan Taman' : '✅ Simpan Perubahan' %>
+      </button>
+      <a href="/admin/taman" class="btn btn-secondary">Batal</a>
+      <% if (mode === 'edit' && v.id) { %>
+      <button type="button" onclick="hapusTaman(<%= v.id %>, '<%= v.nama_taman.replace(/'/g, "\\'") %>')"
+        class="btn btn-danger" style="margin-left:auto;">🗑️ Hapus Taman Ini</button>
+      <% } %>
+    </div>
+  </form>
+</div>
+
+<!-- Form hapus -->
+<form id="hapusForm" method="POST" style="display:none;"></form>
+
+<script>
+function previewPhoto(url) {
+  const div = document.getElementById('photoPreview');
+  const img = document.getElementById('previewImg');
+  if (url) {
+    img.src = url;
+    img.style.display = 'block';
+    div.style.display = 'block';
+  } else {
+    div.style.display = 'none';
+  }
+}
+function hapusTaman(id, nama) {
+  if (!confirm(`Yakin ingin menghapus taman "${nama}"?\n\nData yang sudah dihapus tidak bisa dikembalikan!`)) return;
+  const form = document.getElementById('hapusForm');
+  form.action = `/admin/taman/${id}/hapus`;
+  form.method = 'POST';
+  form.submit();
+}
+</script>
+
+<%- include('_footer') %>

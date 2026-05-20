@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tentang — TamanMedan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('partials/navbar') %>
+
+<div class="page-header">
+  <div class="container">
+    <h1>ℹ️ Tentang TamanMedan</h1>
+    <p>Platform informasi ruang hijau Kota Medan</p>
+  </div>
+</div>
+
+<div class="about-wrap container">
+  <!-- Statistik -->
+  <section class="about-stats">
+    <div class="astat"><span class="astat-num"><%= stats.total_taman %></span><span>Taman Aktif</span></div>
+    <div class="astat"><span class="astat-num"><%= stats.total_kecamatan %></span><span>Kecamatan</span></div>
+    <div class="astat"><span class="astat-num"><%= stats.gratis %></span><span>Taman Gratis</span></div>
+    <div class="astat"><span class="astat-num"><%= stats.total_ulasan %></span><span>Total Ulasan</span></div>
+    <div class="astat"><span class="astat-num"><%= stats.total_fasilitas %></span><span>Jenis Fasilitas</span></div>
+    <div class="astat"><span class="astat-num"><%= Math.round(stats.total_luas/10000) %>ha</span><span>Total Luas Taman</span></div>
+  </section>
+
+  <!-- Tentang -->
+  <section class="about-section">
+    <div class="about-text">
+      <span class="stag">🌿 Misi Kami</span>
+      <h2>Mendekatkan Warga dengan Ruang Hijau</h2>
+      <p>TamanMedan adalah platform digital yang menyediakan informasi lengkap tentang taman-taman kota di Kota Medan. Kami percaya bahwa setiap warga berhak mendapatkan akses informasi yang mudah tentang ruang terbuka hijau di sekitar mereka.</p>
+      <p>Dengan data yang akurat dan tampilan yang mudah digunakan, kami membantu warga Medan menemukan taman terdekat untuk berolahraga, bermain bersama keluarga, atau sekadar bersantai di tengah kesibukan kota.</p>
+    </div>
+  </section>
+
+  <!-- Fitur -->
+  <section class="about-section">
+    <h2 style="text-align:center;margin-bottom:32px">Fitur Platform</h2>
+    <div class="fitur-grid">
+      <div class="fitur-card">
+        <span class="fitur-icon">🗺️</span>
+        <h3>Peta Interaktif</h3>
+        <p>Visualisasi lokasi semua taman di peta. Filter berdasarkan kategori, kecamatan, dan fasilitas. Tampilkan area taman dalam bentuk poligon.</p>
+      </div>
+      <div class="fitur-card">
+        <span class="fitur-icon">🔍</span>
+        <h3>Pencarian & Filter</h3>
+        <p>Cari taman berdasarkan nama, kategori, kecamatan, atau jenis tiket. Urutkan berdasarkan rating, luas, atau jumlah ulasan.</p>
+      </div>
+      <div class="fitur-card">
+        <span class="fitur-icon">⚖️</span>
+        <h3>Perbandingan Taman</h3>
+        <p>Bandingkan dua taman secara berdampingan untuk melihat perbedaan fasilitas, luas, rating, dan informasi lainnya.</p>
+      </div>
+      <div class="fitur-card">
+        <span class="fitur-icon">⭐</span>
+        <h3>Ulasan Pengunjung</h3>
+        <p>Baca dan tulis ulasan dari pengunjung nyata. Sistem rating bintang dengan distribusi persentase yang transparan.</p>
+      </div>
+      <div class="fitur-card">
+        <span class="fitur-icon">📍</span>
+        <h3>Lokasi Real-time</h3>
+        <p>Temukan taman terdekat dari lokasi kamu saat ini menggunakan fitur geolokasi browser.</p>
+      </div>
+      <div class="fitur-card">
+        <span class="fitur-icon">📱</span>
+        <h3>Responsif</h3>
+        <p>Tampilan optimal di semua perangkat — desktop, tablet, maupun smartphone.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Teknologi -->
+  <section class="about-section">
+    <h2 style="text-align:center;margin-bottom:24px">Teknologi yang Digunakan</h2>
+    <div class="tech-list">
+      <span class="tech-badge">Node.js</span>
+      <span class="tech-badge">Express.js</span>
+      <span class="tech-badge">PostgreSQL</span>
+      <span class="tech-badge">EJS</span>
+      <span class="tech-badge">Leaflet.js</span>
+      <span class="tech-badge">Cloudinary</span>
+    </div>
+  </section>
+
+  <!-- Navigasi cepat -->
+  <section class="about-section" style="text-align:center">
+    <h2>Mulai Jelajahi</h2>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:24px">
+      <a href="/peta"  class="btn-primary">🗺️ Lihat Peta</a>
+      <a href="/taman" class="btn-outline">🌳 Daftar Taman</a>
+      <a href="/taman/bandingkan" class="btn-outline">⚖️ Bandingkan Taman</a>
+    </div>
+  </section>
+</div>
+
+<%- include('partials/footer') %>
+<script src="/js/main.js"></script>
+</body>
+</html>

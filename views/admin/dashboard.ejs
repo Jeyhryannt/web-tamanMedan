@@ -1,0 +1,81 @@
+<%
+  pageTitle = 'Dashboard';
+  activePage = 'dashboard';
+%>
+<%- include('_header') %>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="icon">🌳</span>
+    <div class="label">Total Taman</div>
+    <div class="val"><%= stats.total_taman %></div>
+  </div>
+  <div class="stat-card">
+    <span class="icon">✅</span>
+    <div class="label">Taman Aktif</div>
+    <div class="val"><%= stats.aktif %></div>
+  </div>
+  <div class="stat-card">
+    <span class="icon">🚫</span>
+    <div class="label">Non-aktif</div>
+    <div class="val"><%= stats.nonaktif %></div>
+  </div>
+  <div class="stat-card">
+    <span class="icon">🎟️</span>
+    <div class="label">Gratis Masuk</div>
+    <div class="val"><%= stats.gratis %></div>
+  </div>
+  <div class="stat-card">
+    <span class="icon">📍</span>
+    <div class="label">Kecamatan</div>
+    <div class="val"><%= stats.kecamatan %></div>
+  </div>
+  <div class="stat-card">
+    <span class="icon">⭐</span>
+    <div class="label">Total Ulasan</div>
+    <div class="val"><%= ulasanStats.total %></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>🕐 Taman Terbaru Ditambahkan</h2>
+    <a href="/admin/taman/tambah" class="btn btn-primary">+ Tambah Taman</a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nama Taman</th>
+        <th>Kecamatan</th>
+        <th>Status</th>
+        <th>Ditambahkan</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% recentTaman.forEach(t => { %>
+      <tr>
+        <td><strong><%= t.nama_taman %></strong></td>
+        <td><%= t.kecamatan || '—' %></td>
+        <td>
+          <span class="badge-<%= t.status %>"><%= t.status %></span>
+        </td>
+        <td><%= t.created_at ? new Date(t.created_at).toLocaleDateString('id-ID') : '—' %></td>
+        <td>
+          <a href="/admin/taman/<%= t.id %>/edit" class="btn btn-secondary btn-sm">✏️ Edit</a>
+          <a href="/taman/<%= t.id %>" target="_blank" class="btn btn-secondary btn-sm">👁️ Lihat</a>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+  <a href="/admin/taman" class="btn btn-secondary">🌳 Lihat Semua Taman</a>
+  <a href="/admin/taman/tambah" class="btn btn-primary">+ Tambah Taman Baru</a>
+  <a href="/admin/fasilitas" class="btn btn-secondary">🛝 Kelola Fasilitas</a>
+  <a href="/admin/ulasan" class="btn btn-secondary">⭐ Kelola Ulasan</a>
+</div>
+
+<%- include('_footer') %>

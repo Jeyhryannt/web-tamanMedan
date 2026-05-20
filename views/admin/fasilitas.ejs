@@ -1,0 +1,70 @@
+<%
+  pageTitle = 'Kelola Fasilitas';
+  activePage = 'fasilitas';
+%>
+<%- include('_header') %>
+
+<% if (query && query.success) { %>
+<div class="alert alert-success">✅ Fasilitas berhasil <%= query.success === 'hapus' ? 'dihapus' : 'ditambahkan' %>!</div>
+<% } %>
+<% if (query && query.error) { %>
+<div class="alert alert-error">⚠️ Terjadi kesalahan.</div>
+<% } %>
+
+<div style="display:grid;grid-template-columns:350px 1fr;gap:24px;align-items:start;flex-wrap:wrap;">
+
+  <!-- Form Tambah -->
+  <div class="card">
+    <div class="card-head"><h2>➕ Tambah Fasilitas Baru</h2></div>
+    <form method="POST" action="/admin/fasilitas/tambah" style="padding:24px;">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Nama Fasilitas <span style="color:red">*</span></label>
+        <input type="text" name="nama" class="form-control"
+          placeholder="cth. Jogging Track" required>
+        <div style="font-size:12px;color:#888;margin-top:6px;">Gunakan nama yang deskriptif dan konsisten.</div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">✅ Tambah Fasilitas</button>
+    </form>
+  </div>
+
+  <!-- Daftar Fasilitas -->
+  <div class="card">
+    <div class="card-head">
+      <h2>🛝 Daftar Fasilitas (<%= fasilitasList.length %>)</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nama Fasilitas</th>
+          <th>Digunakan di</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% fasilitasList.forEach((f, i) => { %>
+        <tr>
+          <td style="color:#999;"><%= i+1 %></td>
+          <td><strong><%= f.nama %></strong></td>
+          <td><%= f.digunakan %> taman</td>
+          <td>
+            <% if (f.digunakan === 0) { %>
+            <form method="POST" action="/admin/fasilitas/<%= f.id %>/hapus" style="display:inline;"
+              onsubmit="return confirm('Hapus fasilitas \"<%= f.nama %>\"?')">
+              <button type="submit" class="btn btn-danger btn-sm">🗑️ Hapus</button>
+            </form>
+            <% } else { %>
+            <span style="font-size:12px;color:#999;">Sedang digunakan</span>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+        <% if (!fasilitasList.length) { %>
+        <tr><td colspan="4" style="text-align:center;padding:40px;color:#999;">Belum ada fasilitas.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('_footer') %>

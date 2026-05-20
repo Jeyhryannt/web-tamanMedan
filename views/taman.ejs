@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Daftar Taman — TamanMedan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('partials/navbar') %>
+
+<div class="page-header">
+  <div class="container">
+    <h1>🌳 Daftar Taman</h1>
+    <p>Temukan dan jelajahi taman-taman indah di Kota Medan</p>
+  </div>
+</div>
+
+<div class="container" style="padding:40px 24px">
+  <!-- Filter Bar -->
+  <form method="GET" action="/taman" class="filter-bar">
+    <div class="filter-group">
+      <input type="text" name="q" value="<%= filters.q || '' %>" placeholder="🔍 Cari nama taman...">
+    </div>
+    <div class="filter-group">
+      <select name="kategori">
+        <option value="">Semua Kategori</option>
+        <% kategoriList.forEach(k => { %>
+        <option value="<%= k.nama %>" <%= filters.kategori===k.nama?'selected':'' %>><%= k.nama %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="filter-group">
+      <select name="kecamatan">
+        <option value="">Semua Kecamatan</option>
+        <% kecamatanList.forEach(k => { %>
+        <option value="<%= k.nama %>" <%= filters.kecamatan===k.nama?'selected':'' %>><%= k.nama %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="filter-group">
+      <select name="tiket">
+        <option value="">Semua Tiket</option>
+        <option value="gratis" <%= filters.tiket==='gratis'?'selected':'' %>>✅ Gratis</option>
+        <option value="bayar"  <%= filters.tiket==='bayar' ?'selected':'' %>>💰 Berbayar</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-filter">Filter</button>
+    <a href="/taman" class="btn-reset">Reset</a>
+  </form>
+
+  <!-- Sort & View toggle -->
+  <div class="list-toolbar">
+    <div class="result-count"><strong><%= taman.length %></strong> taman ditemukan</div>
+    <div class="toolbar-right">
+      <div class="sort-group">
+        <span>Urutkan:</span>
+        <% const sorts = [['nama','Nama'],['rating','Rating'],['luas','Luas'],['ulasan','Ulasan']]; %>
+        <% sorts.forEach(([val,label]) => { %>
+        <a href="?<%= new URLSearchParams({...filters, sort: val}).toString() %>"
+           class="sort-btn <%= filters.sort===val ? 'active' : '' %>"><%= label %></a>
+        <% }) %>
+      </div>
+      <div class="view-toggle">
+        <a href="?<%= new URLSearchParams({...filters, view:'grid'}).toString() %>"
+           class="view-btn <%= filters.view!=='list'?'active':'' %>">⊞</a>
+        <a href="?<%= new URLSearchParams({...filters, view:'list'}).toString() %>"
+           class="view-btn <%= filters.view==='list'?'active':'' %>">☰</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bandingkan CTA -->
+  <div class="bandingkan-bar">
+    <span>💡 Ingin membandingkan dua taman?</span>
+    <a href="/taman/bandingkan">Fitur Bandingkan →</a>
+  </div>
+
+  <!-- Grid/List -->
+  <% if (taman.length === 0) { %>
+  <div class="empty-state">
+    <div class="empty-icon">🌿</div>
+    <h3>Tidak ada taman ditemukan</h3>
+    <p>Coba ubah filter pencarian kamu</p>
+    <a href="/taman" class="btn-primary">Reset Filter</a>
+  </div>
+  <% } else if (filters.view === 'list') { %>
+  <div class="taman-list-view">
+    <% taman.forEach(t => { %>
+    <a href="/taman/<%= t.id %>" class="tlist-item">
+      <img src="<%= t.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=300' %>"
+           onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=300'"
+           alt="<%= t.nama_taman %>">
+      <div class="tlist-info">
+        <div class="tlist-tags">
+          <span class="tag-kat"><%= t.kategori %></span>
+          <% if(t.tiket_masuk==0) { %><span class="tag-free">Gratis</span><% } %>
+          <span class="tag-status <%= t.status %>"><%= t.status %></span>
+        </div>
+        <h3><%= t.nama_taman %></h3>
+        <p class="tlist-alamat">📍 <%= t.alamat %></p>
+        <div class="tlist-meta">
+          <span>🕐 <%= t.jam_buka ? String(t.jam_buka).slice(0,5) : '--' %>–<%= t.jam_tutup ? String(t.jam_tutup).slice(0,5) : '--' %></span>
+          <span>⭐ <%= t.rating_avg %> (<%= t.jumlah_ulasan %> ulasan)</span>
+          <% if(t.luas_m2) { %><span>📐 <%= parseInt(t.luas_m2).toLocaleString('id-ID') %> m²</span><% } %>
+          <% if(t.tiket_masuk > 0) { %><span>🎫 Rp <%= parseInt(t.tiket_masuk).toLocaleString('id-ID') %></span><% } %>
+        </div>
+        <% const fasArr = Array.isArray(t.fasilitas) ? t.fasilitas : JSON.parse(t.fasilitas||'[]'); %>
+        <div class="tlist-fas">
+          <% fasArr.slice(0,5).forEach(f => { %><span class="fas-chip"><%= f %></span><% }) %>
+          <% if(fasArr.length > 5) { %><span class="fas-more">+<%= fasArr.length-5 %> lainnya</span><% } %>
+        </div>
+      </div>
+      <div class="tlist-arrow">→</div>
+    </a>
+    <% }) %>
+  </div>
+  <% } else { %>
+  <div class="taman-grid">
+    <% taman.forEach(t => { %>
+    <a href="/taman/<%= t.id %>" class="tcard">
+      <div class="tcard-img">
+        <img src="<%= t.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=600' %>"
+             onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=600'"
+             alt="<%= t.nama_taman %>">
+        <div class="tcard-overlay"></div>
+        <div class="tcard-badges">
+          <span class="tag-kat"><%= t.kategori %></span>
+          <% if(t.tiket_masuk==0) { %><span class="tag-free">Gratis</span><% } %>
+        </div>
+        <div class="tcard-rating">⭐ <%= t.rating_avg %></div>
+      </div>
+      <div class="tcard-body">
+        <h3><%= t.nama_taman %></h3>
+        <p class="tcard-loc">📍 <%= t.kecamatan %></p>
+        <div class="tcard-meta">
+          <span>🕐 <%= t.jam_buka ? String(t.jam_buka).slice(0,5) : '--' %>–<%= t.jam_tutup ? String(t.jam_tutup).slice(0,5) : '--' %></span>
+          <span><% if(t.tiket_masuk==0){ %>✅ Gratis<% } else { %>💰 Rp <%= parseInt(t.tiket_masuk).toLocaleString('id-ID') %><% } %></span>
+        </div>
+        <% const fasArr2 = Array.isArray(t.fasilitas) ? t.fasilitas : JSON.parse(t.fasilitas||'[]'); %>
+        <div class="tcard-fas">
+          <% fasArr2.slice(0,3).forEach(f => { %><span class="fas-chip"><%= f %></span><% }) %>
+          <% if(fasArr2.length>3) { %><span class="fas-more">+<%= fasArr2.length-3 %></span><% } %>
+        </div>
+      </div>
+    </a>
+    <% }) %>
+  </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>
+<script src="/js/main.js"></script>
+</body>
+</html>

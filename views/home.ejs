@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TamanMedan — Ruang Hijau Kota Medan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<%- include('partials/navbar') %>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-particles" id="particles"></div>
+  <div class="hero-content">
+    <span class="hero-tag">🌳 Kota Medan</span>
+    <h1>Temukan <em>Taman</em><br>Terindah di Medan</h1>
+    <p>Jelajahi <%= stats.total_taman %> taman aktif di <%= stats.total_kecamatan %> kecamatan.<br>Temukan tempat hijau untuk bersantai, olahraga, dan bermain.</p>
+    <div class="hero-actions">
+      <a href="/peta" class="btn-primary">🗺️ Lihat di Peta</a>
+      <a href="/taman" class="btn-outline">Semua Taman →</a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><span class="hstat-num"><%= stats.total_taman %></span><span>Taman Aktif</span></div>
+    <div class="hstat-div"></div>
+    <div class="hstat"><span class="hstat-num"><%= stats.total_kecamatan %></span><span>Kecamatan</span></div>
+    <div class="hstat-div"></div>
+    <div class="hstat"><span class="hstat-num"><%= stats.gratis %></span><span>Gratis Masuk</span></div>
+    <div class="hstat-div"></div>
+    <div class="hstat"><span class="hstat-num"><%= Math.round(stats.total_luas/10000) %>ha</span><span>Total Luas</span></div>
+  </div>
+</section>
+
+<!-- KATEGORI -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <span class="stag">Kategori</span>
+      <h2>Jelajahi Berdasarkan Jenis</h2>
+    </div>
+    <div class="kategori-grid">
+      <% const katIcons = {'Taman Kota':'🏙️','Taman Bermain':'🛝','Taman Edukasi':'📚','Taman Olahraga':'⚽','Taman Wisata':'📸'}; %>
+      <% kategori.forEach(k => { %>
+      <a href="/taman?kategori=<%= encodeURIComponent(k.nama) %>" class="kat-card">
+        <span class="kat-icon"><%= katIcons[k.nama] || '🌿' %></span>
+        <span class="kat-name"><%= k.nama %></span>
+        <span class="kat-arrow">→</span>
+      </a>
+      <% }) %>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED -->
+<section class="section section-dark">
+  <div class="container">
+    <div class="section-head light">
+      <span class="stag">⭐ Terpopuler</span>
+      <h2>Taman Pilihan</h2>
+      <p>Taman dengan rating tertinggi dari pengunjung</p>
+    </div>
+    <div class="featured-grid">
+      <% featured.forEach((t,i) => { %>
+      <a href="/taman/<%= t.id %>" class="feat-card <%= i===0 ? 'feat-main' : '' %>">
+        <div class="feat-img">
+          <img src="<%= t.photo_url || 'https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=800' %>"
+               alt="<%= t.nama_taman %>"
+               onerror="this.src='https://images.unsplash.com/photo-1585320806297-9794b3e4abb3?w=800'">
+          <div class="feat-overlay"></div>
+        </div>
+        <div class="feat-body">
+          <div class="feat-tags">
+            <span class="tag-kat"><%= t.kategori %></span>
+            <% if(t.tiket_masuk==0) { %><span class="tag-free">Gratis</span><% } %>
+          </div>
+          <h3><%= t.nama_taman %></h3>
+          <div class="feat-meta">
+            <span>📍 <%= t.kecamatan %></span>
+            <span>⭐ <%= t.rating_avg %> (<%= t.jumlah_ulasan %>)</span>
+          </div>
+        </div>
+      </a>
+      <% }) %>
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a href="/taman" class="btn-outline-light">Lihat Semua Taman →</a>
+    </div>
+  </div>
+</section>
+
+<!-- MINI MAP PREVIEW -->
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <span class="stag">📍 Lokasi</span>
+      <h2>Sebaran Taman di Medan</h2>
+      <p>Klik marker untuk info taman, atau buka halaman peta untuk fitur lengkap</p>
+    </div>
+    <div class="mini-map-wrap">
+      <div id="miniMap"></div>
+      <a href="/peta" class="mini-map-btn">Buka Peta Lengkap 🗺️</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-cta">
+  <div class="container">
+    <div class="cta-box">
+      <div class="cta-text">
+        <h2>Bandingkan 2 Taman</h2>
+        <p>Pilih 2 taman dan bandingkan fasilitas, luas, rating, dan informasi lainnya secara berdampingan.</p>
+        <a href="/taman/bandingkan" class="btn-primary">Mulai Bandingkan →</a>
+      </div>
+      <div class="cta-visual">⚖️</div>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/main.js"></script>
+<script>
+// Mini map
+const miniMap = L.map('miniMap', { zoomControl: true, scrollWheelZoom: false })
+  .setView([3.5952, 98.6722], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(miniMap);
+
+fetch('/api/taman').then(r=>r.json()).then(({data}) => {
+  data.forEach(t => {
+    if (!t.latitude || !t.longitude) return;
+    const icon = L.divIcon({ html:`<div class="mmarker">🌿</div>`, className:'', iconSize:[32,32], iconAnchor:[16,16] });
+    L.marker([parseFloat(t.latitude), parseFloat(t.longitude)], {icon})
+      .addTo(miniMap)
+      .bindPopup(`<b>${t.nama_taman}</b><br><small>${t.kecamatan}</small><br><a href="/taman/${t.id}">Detail →</a>`);
+  });
+  if(data.length) {
+    const g = L.featureGroup(data.filter(t=>t.latitude).map(t=>L.marker([parseFloat(t.latitude),parseFloat(t.longitude)])));
+    miniMap.fitBounds(g.getBounds().pad(0.15));
+  }
+});
+</script>
+</body>
+</html>
