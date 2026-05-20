@@ -37,7 +37,15 @@ app.use('/admin',  require('./routes/admin'));
 
 app.use((req, res) => res.status(404).render('404'));
 
-app.listen(PORT, () => {
-  console.log(`🌿 TamanMedan berjalan di http://localhost:${PORT}`);
-  console.log(`🔐 Admin panel: http://localhost:${PORT}/admin`);
-});
+// ========== PERUBAHAN UNTUK DEPLOY (Vercel) ==========
+// Hanya jalankan server jika bukan di environment production Vercel
+// Di production, Vercel akan memanggil app sebagai serverless function.
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🌿 TamanMedan berjalan di http://localhost:${PORT}`);
+    console.log(`🔐 Admin panel: http://localhost:${PORT}/admin`);
+  });
+}
+
+// WAJIB: export app untuk Vercel (dan tetap bisa di-run secara normal di lokal)
+module.exports = app;
